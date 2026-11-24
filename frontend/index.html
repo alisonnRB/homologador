@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Homologador de Atributos</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+<body>
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- TELA DE AUTENTICAÇÃO (RF01 e RF02) -->
+  <main id="auth-screen" class="auth-wrapper">
+    <section class="auth-card">
+      <div class="brand-header">
+        <div class="brand-icon" aria-hidden="true">✓</div>
+        <div>
+          <h1>Homologador de Atributos</h1>
+          <p>Gerenciamento, submissão e acompanhamento de homologações</p>
+        </div>
+      </div>
+
+      <div class="auth-tabs" role="tablist">
+        <button id="tab-login" class="auth-tab active" type="button" role="tab" aria-selected="true">
+          Entrar
+        </button>
+        <button id="tab-register" class="auth-tab" type="button" role="tab" aria-selected="false">
+          Criar Conta
+        </button>
+      </div>
+
+      <div id="auth-alert" class="alert hidden" role="alert"></div>
+
+      <!-- Formulário de Login -->
+      <form id="login-form" class="auth-form">
+        <div class="form-group">
+          <label for="login-email">E-mail</label>
+          <input
+            id="login-email"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="seu.email@exemplo.com"
+          />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Senha</label>
+          <input
+            id="login-password"
+            type="password"
+            required
+            autocomplete="current-password"
+            placeholder="Digite sua senha"
+          />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Acessar Sistema</button>
+      </form>
+
+      <!-- Formulário de Cadastro -->
+      <form id="register-form" class="auth-form hidden">
+        <div class="form-group">
+          <label for="register-email">E-mail</label>
+          <input
+            id="register-email"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="seu.email@exemplo.com"
+          />
+        </div>
+        <div class="form-group">
+          <label for="register-password">Senha (mínimo 6 caracteres)</label>
+          <input
+            id="register-password"
+            type="password"
+            minlength="6"
+            required
+            autocomplete="new-password"
+            placeholder="Crie uma senha segura"
+          />
+        </div>
+        <div class="form-group">
+          <label for="register-confirm">Confirmar Senha</label>
+          <input
+            id="register-confirm"
+            type="password"
+            minlength="6"
+            required
+            autocomplete="new-password"
+            placeholder="Repita a senha"
+          />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Criar Minha Conta</button>
+      </form>
+    </section>
+  </main>
+
+  <!-- APLICAÇÃO PRINCIPAL -->
+  <div id="app-screen" class="app-shell hidden">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="topbar-brand">
+          <div class="brand-icon small" aria-hidden="true">✓</div>
+          <div>
+            <span class="topbar-title">Homologador de Atributos</span>
+            <span class="topbar-subtitle">Portal de Governança e Homologação</span>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button id="btn-novo-atributo" type="button" class="btn btn-primary">
+            + Cadastrar Atributo
+          </button>
+          <div class="user-chip">
+            <span id="user-email-display" class="user-email"></span>
+            <span id="user-role-badge" class="role-badge"></span>
+          </div>
+          <button id="btn-logout" type="button" class="btn btn-ghost">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <!-- Navegação de Visões -->
+      <nav class="nav-views" aria-label="Seções principais">
+        <button type="button" class="view-tab active" data-view="meus">
+          Meus Atributos (Acompanhamento)
+        </button>
+        <button type="button" class="view-tab" data-view="catalogo">
+          Consulta Geral de Atributos
+        </button>
+        <button id="nav-fila-homologacao" type="button" class="view-tab hidden" data-view="fila">
+          Fila de Homologação
+        </button>
+      </nav>
+
+      <!-- Cabeçalho Contextual -->
+      <section class="section-header">
+        <div>
+          <h2 id="view-title">Meus Atributos</h2>
+          <p id="view-description">
+            Acompanhe o andamento, os pareceres técnicos e o resultado das suas submissões.
+          </p>
+        </div>
+      </section>
+
+      <!-- Cards de Resumo (KPIs) -->
+      <section class="stats-grid" aria-label="Resumo por status">
+        <article class="stat-card">
+          <span class="stat-label">Total</span>
+          <strong id="stat-total" class="stat-value">0</strong>
+        </article>
+        <article class="stat-card stat-pending">
+          <span class="stat-label">Pendentes</span>
+          <strong id="stat-pendentes" class="stat-value">0</strong>
+        </article>
+        <article class="stat-card stat-approved">
+          <span class="stat-label">Aprovados</span>
+          <strong id="stat-aprovados" class="stat-value">0</strong>
+        </article>
+        <article class="stat-card stat-rejected">
+          <span class="stat-label">Rejeitados</span>
+          <strong id="stat-rejeitados" class="stat-value">0</strong>
+        </article>
+      </section>
+
+      <!-- Barra de Busca e Filtros de Status -->
+      <section class="toolbar">
+        <form id="search-form" class="search-box">
+          <input
+            id="search-input"
+            type="search"
+            placeholder="Buscar atributos por nome ou descrição..."
+            aria-label="Buscar atributos"
+          />
+          <button type="submit" class="btn btn-secondary">Buscar</button>
+          <button id="btn-limpar-busca" type="button" class="btn btn-ghost hidden">Limpar</button>
+        </form>
+
+        <div class="status-filters" role="group" aria-label="Filtrar por status">
+          <button type="button" class="filter-pill active" data-status="">Todos</button>
+          <button type="button" class="filter-pill" data-status="pendente">Pendentes</button>
+          <button type="button" class="filter-pill" data-status="aprovado">Aprovados</button>
+          <button type="button" class="filter-pill" data-status="rejeitado">Rejeitados</button>
+        </div>
+      </section>
+
+      <!-- Lista de Atributos -->
+      <section id="attributes-list" class="attributes-grid" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <!-- MODAL: CADASTRAR OU RESSUBMETER ATRIBUTO (RF03 / RF06) -->
+  <div id="modal-form-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-form-title">Cadastrar Novo Atributo</h3>
+        <button id="btn-close-form-modal" type="button" class="btn-close" aria-label="Fechar">×</button>
+      </div>
+      <form id="atributo-form" class="modal-body">
+        <input id="atributo-edit-id" type="hidden" />
+        <div class="form-group">
+          <label for="atributo-nome">Nome do Atributo</label>
+          <input
+            id="atributo-nome"
+            type="text"
+            required
+            minlength="2"
+            maxlength="150"
+            placeholder="Ex.: codigo_identificador_fiscal"
+          />
+        </div>
+        <div class="form-group">
+          <label for="atributo-descricao">Descrição e Especificação</label>
+          <textarea
+            id="atributo-descricao"
+            rows="4"
+            required
+            minlength="3"
+            maxlength="4000"
+            placeholder="Descreva a finalidade, formato esperado, domínio e regras do atributo..."
+          ></textarea>
+        </div>
+        <div id="grupo-observacao-ressubmissao" class="form-group hidden">
+          <label for="atributo-observacao">Nota sobre os ajustes realizados (opcional)</label>
+          <input
+            id="atributo-observacao"
+            type="text"
+            maxlength="1000"
+            placeholder="Ex.: Formato ajustado para numérico de 11 dígitos conforme parecer."
+          />
+        </div>
+        <div class="modal-footer">
+          <button id="btn-cancel-form" type="button" class="btn btn-ghost">Cancelar</button>
+          <button id="btn-submit-form" type="submit" class="btn btn-primary">Submeter para Homologação</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: DETALHES, HISTÓRICO E HOMOLOGAÇÃO (RF04, RF05 e RF06) -->
+  <div id="modal-detail-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 id="detail-nome">Detalhes do Atributo</h3>
+          <span id="detail-status-badge" class="status-badge"></span>
+        </div>
+        <button id="btn-close-detail-modal" type="button" class="btn-close" aria-label="Fechar">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="detail-meta" id="detail-meta"></div>
+
+        <div class="detail-box">
+          <h4>Descrição do Atributo</h4>
+          <div id="detail-descricao" class="detail-description"></div>
+        </div>
+
+        <!-- Painel exclusivo de Homologação (RF05) -->
+        <section id="homologacao-panel" class="homologacao-box hidden">
+          <h4>Registrar Avaliação de Homologação</h4>
+          <form id="homologacao-form">
+            <div class="decision-options">
+              <label class="radio-card decision-approve">
+                <input type="radio" name="decisao-status" value="aprovado" checked />
+                <span>Aprovar Atributo</span>
+              </label>
+              <label class="radio-card decision-reject">
+                <input type="radio" name="decisao-status" value="rejeitado" />
+                <span>Rejeitar Atributo</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label for="homologacao-parecer">Parecer da Homologação</label>
+              <textarea
+                id="homologacao-parecer"
+                rows="3"
+                placeholder="Informe a justificativa técnica ou observações sobre a decisão..."
+              ></textarea>
+            </div>
+            <div class="homologacao-actions">
+              <button type="submit" class="btn btn-primary">Confirmar Homologação</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Histórico completo (Entidade HOMOLOGACOES) -->
+        <section class="timeline-section">
+          <h4>Histórico de Homologação e Acompanhamento</h4>
+          <div id="detail-timeline" class="timeline"></div>
+        </section>
+
+        <div id="detail-owner-actions" class="modal-footer hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/static/js/app.js"></script>
+</body>
+</html>
