@@ -69,8 +69,8 @@ erDiagram
 
 - **Backend**: Python 3.12, FastAPI, SQLAlchemy 2.0, Pydantic v2, PyJWT, `bcrypt`
 - **Banco de Dados**: PostgreSQL 16 (`psycopg` v3)
-- **Frontend**: HTML5, CSS3 responsivo e JavaScript ES6 modular
-- **Infraestrutura**: Docker e Docker Compose
+- **Frontend**: HTML5, CSS3 responsivo e TypeScript (ES2022 modular)
+- **Infraestrutura**: Docker (multi-stage build) e Docker Compose
 
 ---
 
@@ -123,10 +123,12 @@ homologador/
 ├── frontend/
 │   ├── index.html          # Interface de usuário (SPA)
 │   ├── css/styles.css      # Estilos responsivos
-│   └── js/                 # Cliente HTTP e lógica de estado/componentes
+│   └── ts/                 # Código-fonte TypeScript (types.ts, api.ts e app.ts)
 ├── tests/
 │   └── test_app.py         # Testes automatizados com Pytest
 ├── Dockerfile
 ├── docker-compose.yml
+├── package.json
+├── tsconfig.json
 └── requirements.txt
 ```

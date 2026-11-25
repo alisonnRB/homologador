@@ -1,0 +1,14 @@
+{
+  "name": "homologador-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Frontend em TypeScript do Homologador de Atributos",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "watch": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}

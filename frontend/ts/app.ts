@@ -1,71 +1,96 @@
-import { api, limparToken, obterToken, salvarToken } from "./api.js";
+import { ErroApi, api, limparToken, obterToken, salvarToken } from "./api.js";
+import type {
+  Atributo,
+  AtributoDetalhe,
+  ResumoContagem,
+  StatusHomologacaoNome,
+  TipoToast,
+  UsuarioAutenticado,
+  VisaoApp,
+} from "./types.js";
 
-const estado = {
+interface EstadoAplicacao {
+  usuario: UsuarioAutenticado | null;
+  visaoAtual: VisaoApp;
+  filtroStatus: string;
+  termoBusca: string;
+  atributoSelecionado: AtributoDetalhe | null;
+}
+
+const estado: EstadoAplicacao = {
   usuario: null,
-  visaoAtual: "meus", // 'meus' | 'catalogo' | 'fila'
+  visaoAtual: "meus",
   filtroStatus: "",
   termoBusca: "",
   atributoSelecionado: null,
 };
 
+function buscarElemento<T extends HTMLElement>(id: string): T {
+  const elemento = document.getElementById(id);
+  if (!elemento) {
+    throw new Error(`Elemento DOM #${id} não encontrado.`);
+  }
+  return elemento as T;
+}
+
 const el = {
-  authScreen: document.getElementById("auth-screen"),
-  appScreen: document.getElementById("app-screen"),
-  tabLogin: document.getElementById("tab-login"),
-  tabRegister: document.getElementById("tab-register"),
-  loginForm: document.getElementById("login-form"),
-  registerForm: document.getElementById("register-form"),
-  authAlert: document.getElementById("auth-alert"),
-  userEmailDisplay: document.getElementById("user-email-display"),
-  userRoleBadge: document.getElementById("user-role-badge"),
-  navFila: document.getElementById("nav-fila-homologacao"),
-  viewTitle: document.getElementById("view-title"),
-  viewDescription: document.getElementById("view-description"),
-  statTotal: document.getElementById("stat-total"),
-  statPendentes: document.getElementById("stat-pendentes"),
-  statAprovados: document.getElementById("stat-aprovados"),
-  statRejeitados: document.getElementById("stat-rejeitados"),
-  searchForm: document.getElementById("search-form"),
-  searchInput: document.getElementById("search-input"),
-  btnLimparBusca: document.getElementById("btn-limpar-busca"),
-  attributesList: document.getElementById("attributes-list"),
-  modalFormBackdrop: document.getElementById("modal-form-backdrop"),
-  modalFormTitle: document.getElementById("modal-form-title"),
-  atributoForm: document.getElementById("atributo-form"),
-  atributoEditId: document.getElementById("atributo-edit-id"),
-  atributoNome: document.getElementById("atributo-nome"),
-  atributoDescricao: document.getElementById("atributo-descricao"),
-  grupoObservacao: document.getElementById("grupo-observacao-ressubmissao"),
-  atributoObservacao: document.getElementById("atributo-observacao"),
-  btnSubmitForm: document.getElementById("btn-submit-form"),
-  modalDetailBackdrop: document.getElementById("modal-detail-backdrop"),
-  detailNome: document.getElementById("detail-nome"),
-  detailStatusBadge: document.getElementById("detail-status-badge"),
-  detailMeta: document.getElementById("detail-meta"),
-  detailDescricao: document.getElementById("detail-descricao"),
-  homologacaoPanel: document.getElementById("homologacao-panel"),
-  homologacaoForm: document.getElementById("homologacao-form"),
-  homologacaoParecer: document.getElementById("homologacao-parecer"),
-  detailTimeline: document.getElementById("detail-timeline"),
-  detailOwnerActions: document.getElementById("detail-owner-actions"),
-  toastContainer: document.getElementById("toast-container"),
+  authScreen: buscarElemento<HTMLElement>("auth-screen"),
+  appScreen: buscarElemento<HTMLElement>("app-screen"),
+  tabLogin: buscarElemento<HTMLButtonElement>("tab-login"),
+  tabRegister: buscarElemento<HTMLButtonElement>("tab-register"),
+  loginForm: buscarElemento<HTMLFormElement>("login-form"),
+  registerForm: buscarElemento<HTMLFormElement>("register-form"),
+  authAlert: buscarElemento<HTMLElement>("auth-alert"),
+  userEmailDisplay: buscarElemento<HTMLElement>("user-email-display"),
+  userRoleBadge: buscarElemento<HTMLElement>("user-role-badge"),
+  navFila: buscarElemento<HTMLButtonElement>("nav-fila-homologacao"),
+  viewTitle: buscarElemento<HTMLElement>("view-title"),
+  viewDescription: buscarElemento<HTMLElement>("view-description"),
+  statTotal: buscarElemento<HTMLElement>("stat-total"),
+  statPendentes: buscarElemento<HTMLElement>("stat-pendentes"),
+  statAprovados: buscarElemento<HTMLElement>("stat-aprovados"),
+  statRejeitados: buscarElemento<HTMLElement>("stat-rejeitados"),
+  searchForm: buscarElemento<HTMLFormElement>("search-form"),
+  searchInput: buscarElemento<HTMLInputElement>("search-input"),
+  btnLimparBusca: buscarElemento<HTMLButtonElement>("btn-limpar-busca"),
+  attributesList: buscarElemento<HTMLElement>("attributes-list"),
+  modalFormBackdrop: buscarElemento<HTMLElement>("modal-form-backdrop"),
+  modalFormTitle: buscarElemento<HTMLElement>("modal-form-title"),
+  atributoForm: buscarElemento<HTMLFormElement>("atributo-form"),
+  atributoEditId: buscarElemento<HTMLInputElement>("atributo-edit-id"),
+  atributoNome: buscarElemento<HTMLInputElement>("atributo-nome"),
+  atributoDescricao: buscarElemento<HTMLTextAreaElement>("atributo-descricao"),
+  grupoObservacao: buscarElemento<HTMLElement>("grupo-observacao-ressubmissao"),
+  atributoObservacao: buscarElemento<HTMLInputElement>("atributo-observacao"),
+  btnSubmitForm: buscarElemento<HTMLButtonElement>("btn-submit-form"),
+  modalDetailBackdrop: buscarElemento<HTMLElement>("modal-detail-backdrop"),
+  detailNome: buscarElemento<HTMLElement>("detail-nome"),
+  detailStatusBadge: buscarElemento<HTMLElement>("detail-status-badge"),
+  detailMeta: buscarElemento<HTMLElement>("detail-meta"),
+  detailDescricao: buscarElemento<HTMLElement>("detail-descricao"),
+  homologacaoPanel: buscarElemento<HTMLElement>("homologacao-panel"),
+  homologacaoForm: buscarElemento<HTMLFormElement>("homologacao-form"),
+  homologacaoParecer: buscarElemento<HTMLTextAreaElement>("homologacao-parecer"),
+  detailTimeline: buscarElemento<HTMLElement>("detail-timeline"),
+  detailOwnerActions: buscarElemento<HTMLElement>("detail-owner-actions"),
+  toastContainer: buscarElemento<HTMLElement>("toast-container"),
 };
 
-function mostrarToast(mensagem, tipo = "info") {
+function mostrarToast(mensagem: string, tipo: TipoToast = "info"): void {
   const toast = document.createElement("div");
   toast.className = `toast ${tipo}`;
   toast.textContent = mensagem;
   el.toastContainer.appendChild(toast);
-  setTimeout(() => toast.remove(), 3600);
+  window.setTimeout(() => toast.remove(), 3600);
 }
 
-function escaparTexto(valor) {
+function escaparTexto(valor: string | null | undefined): string {
   const div = document.createElement("div");
   div.textContent = valor ?? "";
   return div.innerHTML;
 }
 
-function formatarData(isoString) {
+function formatarData(isoString: string | null | undefined): string {
   if (!isoString) return "-";
   const data = new Date(isoString.endsWith("Z") ? isoString : `${isoString}Z`);
   if (Number.isNaN(data.getTime())) return isoString;
@@ -78,8 +103,8 @@ function formatarData(isoString) {
   });
 }
 
-function rotuloStatus(status) {
-  const mapa = {
+function rotuloStatus(status: string): string {
+  const mapa: Record<string, string> = {
     pendente: "Pendente",
     aprovado: "Aprovado",
     rejeitado: "Rejeitado",
@@ -87,7 +112,12 @@ function rotuloStatus(status) {
   return mapa[status] || status;
 }
 
-function definirAlertaAuth(mensagem = "") {
+function extrairMensagemErro(erro: unknown): string {
+  if (erro instanceof Error) return erro.message;
+  return "Ocorreu um erro inesperado.";
+}
+
+function definirAlertaAuth(mensagem = ""): void {
   if (!mensagem) {
     el.authAlert.classList.add("hidden");
     el.authAlert.textContent = "";
@@ -97,7 +127,7 @@ function definirAlertaAuth(mensagem = "") {
   el.authAlert.classList.remove("hidden");
 }
 
-function alternarAbaAuth(modo) {
+function alternarAbaAuth(modo: "login" | "register"): void {
   definirAlertaAuth("");
   const ehLogin = modo === "login";
   el.tabLogin.classList.toggle("active", ehLogin);
@@ -106,7 +136,7 @@ function alternarAbaAuth(modo) {
   el.registerForm.classList.toggle("hidden", ehLogin);
 }
 
-function configurarSessao(usuario) {
+function configurarSessao(usuario: UsuarioAutenticado): void {
   estado.usuario = usuario;
   el.authScreen.classList.add("hidden");
   el.appScreen.classList.remove("hidden");
@@ -120,7 +150,7 @@ function configurarSessao(usuario) {
   mudarVisao(ehHomologador ? "fila" : "meus");
 }
 
-function encerrarSessao() {
+function encerrarSessao(): void {
   limparToken();
   estado.usuario = null;
   el.appScreen.classList.add("hidden");
@@ -129,8 +159,8 @@ function encerrarSessao() {
   el.registerForm.reset();
 }
 
-function atualizarCabecalhoVisao() {
-  document.querySelectorAll(".view-tab").forEach((btn) => {
+function atualizarCabecalhoVisao(): void {
+  document.querySelectorAll<HTMLButtonElement>(".view-tab").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.view === estado.visaoAtual);
   });
 
@@ -149,32 +179,28 @@ function atualizarCabecalhoVisao() {
   }
 }
 
-function mudarVisao(novaVisao) {
+function mudarVisao(novaVisao: VisaoApp): void {
   estado.visaoAtual = novaVisao;
-  if (novaVisao === "fila") {
-    estado.filtroStatus = "pendente";
-  } else {
-    estado.filtroStatus = "";
-  }
+  estado.filtroStatus = novaVisao === "fila" ? "pendente" : "";
   atualizarBotoesFiltro();
   atualizarCabecalhoVisao();
-  carregarListaAtributos();
+  void carregarListaAtributos();
 }
 
-function atualizarBotoesFiltro() {
-  document.querySelectorAll(".filter-pill").forEach((pill) => {
-    pill.classList.toggle("active", pill.dataset.status === estado.filtroStatus);
+function atualizarBotoesFiltro(): void {
+  document.querySelectorAll<HTMLButtonElement>(".filter-pill").forEach((pill) => {
+    pill.classList.toggle("active", (pill.dataset.status ?? "") === estado.filtroStatus);
   });
 }
 
-function atualizarResumo(resumo) {
-  el.statTotal.textContent = resumo.total;
-  el.statPendentes.textContent = resumo.pendentes;
-  el.statAprovados.textContent = resumo.aprovados;
-  el.statRejeitados.textContent = resumo.rejeitados;
+function atualizarResumo(resumo: ResumoContagem): void {
+  el.statTotal.textContent = String(resumo.total);
+  el.statPendentes.textContent = String(resumo.pendentes);
+  el.statAprovados.textContent = String(resumo.aprovados);
+  el.statRejeitados.textContent = String(resumo.rejeitados);
 }
 
-function renderizarLista(itens) {
+function renderizarLista(itens: Atributo[]): void {
   el.attributesList.innerHTML = "";
 
   if (!itens.length) {
@@ -225,15 +251,16 @@ function renderizarLista(itens) {
       </div>
     `;
 
-    card.querySelector(".btn-detalhe").addEventListener("click", () => {
-      abrirDetalhesAtributo(item.id);
+    const btnDetalhe = card.querySelector<HTMLButtonElement>(".btn-detalhe");
+    btnDetalhe?.addEventListener("click", () => {
+      void abrirDetalhesAtributo(item.id);
     });
 
     el.attributesList.appendChild(card);
   });
 }
 
-async function carregarListaAtributos() {
+async function carregarListaAtributos(): Promise<void> {
   try {
     const usarApenasMeus = estado.visaoAtual === "meus";
     const dados = await api.listarAtributos({
@@ -244,15 +271,15 @@ async function carregarListaAtributos() {
     atualizarResumo(dados.resumo);
     renderizarLista(dados.itens);
   } catch (erro) {
-    if (erro.status === 401) {
+    if (erro instanceof ErroApi && erro.status === 401) {
       encerrarSessao();
       return;
     }
-    mostrarToast(erro.message, "error");
+    mostrarToast(extrairMensagemErro(erro), "error");
   }
 }
 
-function abrirModalCadastro(atributoParaRessubmeter = null) {
+function abrirModalCadastro(atributoParaRessubmeter: AtributoDetalhe | null = null): void {
   el.atributoForm.reset();
   if (atributoParaRessubmeter) {
     el.modalFormTitle.textContent = "Ajustar e Ressubmeter Atributo";
@@ -270,11 +297,11 @@ function abrirModalCadastro(atributoParaRessubmeter = null) {
   el.modalFormBackdrop.classList.remove("hidden");
 }
 
-function fecharModalCadastro() {
+function fecharModalCadastro(): void {
   el.modalFormBackdrop.classList.add("hidden");
 }
 
-async function abrirDetalhesAtributo(id) {
+async function abrirDetalhesAtributo(id: number): Promise<void> {
   try {
     const detalhe = await api.detalharAtributo(id);
     estado.atributoSelecionado = detalhe;
@@ -334,9 +361,9 @@ async function abrirDetalhesAtributo(id) {
           await api.excluirAtributo(detalhe.id);
           fecharModalDetalhes();
           mostrarToast("Atributo excluído com sucesso.", "success");
-          carregarListaAtributos();
+          void carregarListaAtributos();
         } catch (erro) {
-          mostrarToast(erro.message, "error");
+          mostrarToast(extrairMensagemErro(erro), "error");
         }
       });
       el.detailOwnerActions.appendChild(btnExcluir);
@@ -346,11 +373,11 @@ async function abrirDetalhesAtributo(id) {
 
     el.modalDetailBackdrop.classList.remove("hidden");
   } catch (erro) {
-    mostrarToast(erro.message, "error");
+    mostrarToast(extrairMensagemErro(erro), "error");
   }
 }
 
-function fecharModalDetalhes() {
+function fecharModalDetalhes(): void {
   el.modalDetailBackdrop.classList.add("hidden");
   estado.atributoSelecionado = null;
 }
@@ -359,11 +386,11 @@ function fecharModalDetalhes() {
 el.tabLogin.addEventListener("click", () => alternarAbaAuth("login"));
 el.tabRegister.addEventListener("click", () => alternarAbaAuth("register"));
 
-el.loginForm.addEventListener("submit", async (e) => {
+el.loginForm.addEventListener("submit", async (e: SubmitEvent) => {
   e.preventDefault();
   definirAlertaAuth("");
-  const email = document.getElementById("login-email").value.trim();
-  const senha = document.getElementById("login-password").value;
+  const email = buscarElemento<HTMLInputElement>("login-email").value.trim();
+  const senha = buscarElemento<HTMLInputElement>("login-password").value;
 
   try {
     const resp = await api.login(email, senha);
@@ -371,16 +398,16 @@ el.loginForm.addEventListener("submit", async (e) => {
     configurarSessao(resp.usuario);
     mostrarToast("Bem-vindo ao Homologador de Atributos!", "success");
   } catch (erro) {
-    definirAlertaAuth(erro.message);
+    definirAlertaAuth(extrairMensagemErro(erro));
   }
 });
 
-el.registerForm.addEventListener("submit", async (e) => {
+el.registerForm.addEventListener("submit", async (e: SubmitEvent) => {
   e.preventDefault();
   definirAlertaAuth("");
-  const email = document.getElementById("register-email").value.trim();
-  const senha = document.getElementById("register-password").value;
-  const confirmar = document.getElementById("register-confirm").value;
+  const email = buscarElemento<HTMLInputElement>("register-email").value.trim();
+  const senha = buscarElemento<HTMLInputElement>("register-password").value;
+  const confirmar = buscarElemento<HTMLInputElement>("register-confirm").value;
 
   if (senha !== confirmar) {
     definirAlertaAuth("As senhas informadas não coincidem.");
@@ -393,50 +420,53 @@ el.registerForm.addEventListener("submit", async (e) => {
     configurarSessao(resp.usuario);
     mostrarToast("Conta criada com sucesso!", "success");
   } catch (erro) {
-    definirAlertaAuth(erro.message);
+    definirAlertaAuth(extrairMensagemErro(erro));
   }
 });
 
-document.getElementById("btn-logout").addEventListener("click", () => {
+buscarElemento<HTMLButtonElement>("btn-logout").addEventListener("click", () => {
   encerrarSessao();
   mostrarToast("Sessão encerrada.");
 });
 
-document.getElementById("btn-novo-atributo").addEventListener("click", () => {
+buscarElemento<HTMLButtonElement>("btn-novo-atributo").addEventListener("click", () => {
   abrirModalCadastro(null);
 });
 
-document.getElementById("btn-close-form-modal").addEventListener("click", fecharModalCadastro);
-document.getElementById("btn-cancel-form").addEventListener("click", fecharModalCadastro);
-document.getElementById("btn-close-detail-modal").addEventListener("click", fecharModalDetalhes);
+buscarElemento<HTMLButtonElement>("btn-close-form-modal").addEventListener("click", fecharModalCadastro);
+buscarElemento<HTMLButtonElement>("btn-cancel-form").addEventListener("click", fecharModalCadastro);
+buscarElemento<HTMLButtonElement>("btn-close-detail-modal").addEventListener("click", fecharModalDetalhes);
 
-document.querySelectorAll(".view-tab").forEach((tab) => {
-  tab.addEventListener("click", () => mudarVisao(tab.dataset.view));
-});
-
-document.querySelectorAll(".filter-pill").forEach((pill) => {
-  pill.addEventListener("click", () => {
-    estado.filtroStatus = pill.dataset.status;
-    atualizarBotoesFiltro();
-    carregarListaAtributos();
+document.querySelectorAll<HTMLButtonElement>(".view-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const visao = (tab.dataset.view as VisaoApp | undefined) ?? "meus";
+    mudarVisao(visao);
   });
 });
 
-el.searchForm.addEventListener("submit", (e) => {
+document.querySelectorAll<HTMLButtonElement>(".filter-pill").forEach((pill) => {
+  pill.addEventListener("click", () => {
+    estado.filtroStatus = pill.dataset.status ?? "";
+    atualizarBotoesFiltro();
+    void carregarListaAtributos();
+  });
+});
+
+el.searchForm.addEventListener("submit", (e: SubmitEvent) => {
   e.preventDefault();
   estado.termoBusca = el.searchInput.value.trim();
   el.btnLimparBusca.classList.toggle("hidden", !estado.termoBusca);
-  carregarListaAtributos();
+  void carregarListaAtributos();
 });
 
 el.btnLimparBusca.addEventListener("click", () => {
   el.searchInput.value = "";
   estado.termoBusca = "";
   el.btnLimparBusca.classList.add("hidden");
-  carregarListaAtributos();
+  void carregarListaAtributos();
 });
 
-el.atributoForm.addEventListener("submit", async (e) => {
+el.atributoForm.addEventListener("submit", async (e: SubmitEvent) => {
   e.preventDefault();
   const idEdicao = el.atributoEditId.value;
   const nome = el.atributoNome.value.trim();
@@ -452,18 +482,19 @@ el.atributoForm.addEventListener("submit", async (e) => {
       mostrarToast("Atributo cadastrado e enviado para homologação!", "success");
     }
     fecharModalCadastro();
-    carregarListaAtributos();
+    void carregarListaAtributos();
   } catch (erro) {
-    mostrarToast(erro.message, "error");
+    mostrarToast(extrairMensagemErro(erro), "error");
   }
 });
 
-el.homologacaoForm.addEventListener("submit", async (e) => {
+el.homologacaoForm.addEventListener("submit", async (e: SubmitEvent) => {
   e.preventDefault();
   if (!estado.atributoSelecionado) return;
 
-  const selecionado = document.querySelector('input[name="decisao-status"]:checked');
-  const statusDecisao = selecionado ? selecionado.value : "aprovado";
+  const selecionado = document.querySelector<HTMLInputElement>('input[name="decisao-status"]:checked');
+  const statusDecisao: StatusHomologacaoNome =
+    selecionado?.value === "rejeitado" ? "rejeitado" : "aprovado";
   const parecer = el.homologacaoParecer.value.trim();
 
   try {
@@ -476,13 +507,13 @@ el.homologacaoForm.addEventListener("submit", async (e) => {
       "success"
     );
     await abrirDetalhesAtributo(estado.atributoSelecionado.id);
-    carregarListaAtributos();
+    void carregarListaAtributos();
   } catch (erro) {
-    mostrarToast(erro.message, "error");
+    mostrarToast(extrairMensagemErro(erro), "error");
   }
 });
 
-async function inicializar() {
+async function inicializar(): Promise<void> {
   if (!obterToken()) return;
   try {
     const usuario = await api.me();
@@ -492,4 +523,4 @@ async function inicializar() {
   }
 }
 
-inicializar();
+void inicializar();
