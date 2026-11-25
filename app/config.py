@@ -11,6 +11,8 @@ class Settings(BaseSettings):
 
     admin_email: str = "homologador@sistema.com"
     admin_password: str = "Homologador@123"
+    default_user_email: str = "user"
+    default_user_password: str = "user"
 
     model_config = SettingsConfigDict(
         env_file=".env",

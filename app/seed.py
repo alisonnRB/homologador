@@ -31,3 +31,17 @@ def inicializar_dados_iniciais(db: Session) -> None:
         )
         db.add(novo_admin)
         db.commit()
+
+    login_user = settings.default_user_email.strip().lower()
+    user_existente = db.execute(
+        select(Usuario).where(Usuario.email == login_user)
+    ).scalar_one_or_none()
+
+    if user_existente is None:
+        novo_user = Usuario(
+            email=login_user,
+            senha_hash=gerar_hash_senha(settings.default_user_password),
+            perfil="usuario",
+        )
+        db.add(novo_user)
+        db.commit()
