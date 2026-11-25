@@ -11,13 +11,13 @@ class UsuarioCadastroIn(BaseModel):
 
 
 class UsuarioLoginIn(BaseModel):
-    email: EmailStr
+    email: str = Field(..., min_length=1, max_length=255)
     senha: str = Field(..., min_length=1, max_length=128)
 
 
 class UsuarioAutenticadoOut(BaseModel):
     id: int
-    email: EmailStr
+    email: str
     perfil: str
     criado_em: datetime
 

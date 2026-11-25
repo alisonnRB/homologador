@@ -2,6 +2,7 @@
   "name": "homologador-frontend",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Frontend em TypeScript do Homologador de Atributos",
   "scripts": {
     "build": "tsc",

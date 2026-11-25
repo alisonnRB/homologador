@@ -47,4 +47,7 @@ if FRONTEND_DIR.exists():
 
 @app.get("/", include_in_schema=False)
 def pagina_inicial() -> FileResponse:
-    return FileResponse(FRONTEND_DIR / "index.html")
+    return FileResponse(
+        FRONTEND_DIR / "index.html",
+        headers={"Cache-Control": "no-cache"},
+    )
